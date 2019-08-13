@@ -1,0 +1,140 @@
+/* When a shared_ptr object goes out of scope, its destructor is called. Inside its destructor it decrements the reference 
+/* count by 1 and if new value of reference count is 0 then it deletes the associated raw pointer.
+
+#include <iostream>
+#include <memory>
+
+struct Sample
+{
+    Sample()
+    {
+        std::cout << "CONSTRUCTOR\n";
+    }
+    ~Sample()
+    {
+        std::cout << "DESTRUCTOR\n";
+    }
+};
+
+class Deleter
+{
+public:
+    void operator() (Sample * x) {
+        std::cout<<"'DELETER' FUNCTION CALLED\n";
+        delete[] x;
+    }
+};
+
+int main()
+{
+    // Function Object as deleter
+    std::shared_ptr<Sample> p3(new Sample[12], Deleter());
+
+    // Lambda function as deleter
+    std::shared_ptr<Sample> p4(new Sample[12], [](Sample * x){
+        std::cout<<"LAMBDA deleter FUNCTION CALLED\n";
+        delete[] x;
+    });
+    return 0;
+}
+----------------------------------------------------------------------------------------------------
+#include <iostream>
+#include <memory>
+#include <string>
+
+using namespace std;
+int count = 1;
+struct Sample {
+
+    Sample()
+    {
+
+        std::cout << count++ << " : CONSTRUCTOR" << std::endl;
+        if(count == 11)
+            cout << "\n" << endl;
+    }
+
+    ~Sample()
+    {
+        std::cout << "DESTRUCTOR\n";
+    }
+};
+
+class Entity
+{
+public:
+    Entity()
+    {
+        cout << "Created Entity" << endl;
+    }
+
+    ~Entity()
+    {
+        cout << "Destroyed Entity" << endl;
+    }
+    void Print()
+    {
+        cout << "Print this" << endl;
+    }
+};
+
+class Deleter
+{
+public:
+    void operator()(Sample* x)
+    {
+        std::cout << "\n\t\t'DELETER' FUNCTION CALLED\n";
+        delete[] x;
+    }
+};
+
+// Function Object as deleter
+std::shared_ptr<Sample> p3(new Sample[10], Deleter());
+
+// Lambda function as deleter
+std::shared_ptr<Sample> p4(new Sample[10], [](Sample* x) {
+    std::cout << "\n\tLAMBDA deleter FUNCTION CALLED\n";
+    delete[] x;
+});
+
+int main()
+{
+    cout << "\n\n" << endl;
+    Entity en;
+    cout << "\n\n\t How \tis \tthis \tworking " << endl;
+    cout << "\n\n" << endl;
+    return 0;
+}
+---------------------------------------------------------------------------------------
+There might be other cases when we don’t need to delete any memory we just need to releasing memory or resources to a pool etc.
+
+#include <iostream>
+#include <memory>
+struct Sample
+{
+};
+// Memory Pool Dummy Kind of Implementation
+template<typename T>
+class MemoryPool
+{
+public:
+    T * AquireMemory()
+    {
+        std::cout << "AQUIRING MEMORY\n";
+        return (new T());
+    }
+    void ReleaseMemory(T * ptr)
+    {
+        std::cout << "RELEASE MEMORY\n";
+        delete ptr;
+    }
+};
+int main()
+{
+    std::shared_ptr<MemoryPool<Sample> > memoryPoolPtr = std::make_shared<
+            MemoryPool<Sample> >();
+    std::shared_ptr<Sample> p3(memoryPoolPtr->AquireMemory(),
+                               std::bind(&MemoryPool<Sample>::ReleaseMemory, memoryPoolPtr,
+                                         std::placeholders::_1));
+    return 0;
+}
