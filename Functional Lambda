@@ -1,0 +1,157 @@
+#include<iostream>
+#include<string>
+#include<functional>
+using namespace std;
+
+template<int aVal, int bVal>
+class ABCD
+{
+	int a = aVal;
+	int b = bVal;
+public:
+	int sum()
+	{
+		return [this]() {
+			return this->a + this->b;
+		}();
+	}
+};
+
+class ABC
+{
+	int a = 10;
+	int b = 20;
+public:
+	int sum()
+	{
+		return [this]() {
+			return this->a + this->b; 
+		}();
+	}
+};
+
+void Lambdafun_withref()
+{
+	int x = 1, y = 5;
+	std::function<int(void)> fxsq = [&]() -> int {
+		x++;
+		int x_sq = [=]() {return x * x; }();
+		int y_sq = [=]() {return y * y; }();
+		int xy_sq = [=]() {return 2 * x * y; }();
+		return x_sq + y_sq + xy_sq;
+	};
+	cout << "calling with & : " << endl;
+	cout << fxsq() << endl;
+	cout << fxsq() << endl;
+}
+
+void Lambdafun_withparam()
+{
+	int x = 5, y = 7;
+	std::function<int(void)> fxsq = [x,y]() -> int {
+		int x_sq = [x]() {return x * x; }();
+		int y_sq = [y]() {return y * y; }();
+		int xy_sq = [x,y]() {return 2 * x * y; }();
+		return x_sq + y_sq + xy_sq;
+	};
+	cout << fxsq() << endl;
+}
+
+void Lambdafun_withEq()
+{
+	int x = 5, y = 7;
+	std::function<int(void)> fxsq = [=]() -> int {
+		int x_sq = [=]() {return x * x; }();
+		int y_sq = [=]() {return y * y; }();
+		int xy_sq = [=]() {return 2 * x * y; }();
+		return x_sq + y_sq + xy_sq;
+	};
+	cout << fxsq() << endl;
+}
+void Lambdafun_cap()
+{
+	int local = 100;
+	std::function<int(int, int)> fxsq = [&](int x, int y) -> int {
+		cout << local << endl; //this gives error, as its outside.
+		                       // if [local], then it will work
+		//cout << local++ << endl; //this wont work
+		cout << "local++ : " << local++ << endl; // using & will work
+
+		int x_sq = [](int x) -> int {return x * x; }(x);
+		int y_sq = [](int y) -> int {return y * y; }(y);
+		int xy_sq = [](int x, int y) -> int {return 2 * x * y; }(x, y);
+		return x_sq + y_sq + xy_sq;
+	};
+	cout << fxsq(5, 3) << endl;
+}
+
+
+void Lambdafun_sq()
+{
+	// f(x,y) = x2 + y2 + 2xy;
+	std::function<int(int, int)> fxsq = [](int x, int y) -> int {
+		int x_sq = [](int x) {return x * x; }(x);
+		int y_sq = [](int y) {return y * y; }(y);
+		int xy_sq = [](int x, int y ) {return 2 * x * y; }(x, y);
+		return x_sq + y_sq + xy_sq;
+	};
+	cout << fxsq(5,3) << endl;
+}
+
+void Lambdafun()
+{
+	// f(x) = x * x;
+	std::function<int(int)> fsq = [](int x) -> int
+	{
+		return x * x;
+	};
+	cout << fsq(5) << endl;
+}
+int main()
+{
+  []() {
+	  cout << "HEllp" << endl;//inplace ananymous function
+  }(); //adding () function is called and printed.otherwise not
+
+  // -> int is the return type, get it to value and display.
+  int value = []() -> int {
+	  return 100;
+  }();
+  cout << value << endl;
+
+  // with parameter, and passing value in (10)
+  int param_val = [](int baseVal) -> int
+  {
+	  return baseVal + 100;
+  }(10);
+  cout << param_val << endl;
+
+  // auto or std::function<int(int)>
+  std::function<int(int)> fp = [](int baseVal) -> int
+  {
+	  return baseVal + 7;
+  };
+  int Val_ret = fp(170);// NOTE,argument is passed here.
+  cout << Val_ret << endl;
+
+
+  Lambdafun();
+
+  Lambdafun_sq();
+
+  Lambdafun_cap();
+
+  Lambdafun_withEq();
+
+  Lambdafun_withparam();
+
+  Lambdafun_withref();
+
+  ABC d;
+  cout << d.sum() << endl;
+
+  ABCD<15,20> e;
+  cout << e.sum() << endl;
+
+  cin.get();
+}
