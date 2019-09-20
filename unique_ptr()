@@ -1,0 +1,118 @@
+
+struct SharedTest
+{
+  int var;
+  SharedTest()
+  {
+      cout << "Constructor"<<endl;
+  }
+  ~SharedTest()
+  {
+      cout << "Destructor"<<endl;
+  }
+};
+
+shared_ptr<SharedTest> funct()
+{
+    //shared_ptr<SharedTest> Sp(new SharedTest);
+    //return nullptr;
+    shared_ptr<SharedTest> Sp = make_shared<SharedTest>();//another way of "new"
+                                //make_shared<SharedTest>(); will call both constructor and destructor
+    Sp->var = 100;
+    return Sp;
+}
+
+
+unique_ptr<SharedTest> funct_uniq()
+{
+   unique_ptr<SharedTest> Up(new SharedTest);
+   //return Up; or
+   return move(Up);
+}
+
+int main()
+{
+    cout << "Enter Main"<<endl;
+    //funct(); // only function call
+    shared_ptr<SharedTest> Sptr = funct();
+   
+    weak_ptr<SharedTest> wkr = Sptr;// ref count doesnt increments,it doesn take ownership
+    cout << "Ref count Sptr1 : " << Sptr.use_count()<<endl;
+    cout << endl;
+    shared_ptr<SharedTest> sp2 = Sptr;
+    cout<< "Copy Sptr to sp2 ...."<<endl;
+    cout << "--------------------"<<endl;
+    cout << "Ref count Sptr1 : " << Sptr.use_count()<<endl;
+    cout << "Ref count sp2 :" << sp2.use_count()<<endl;
+    cout << endl;
+    cout << "Weak Pointer count : " << wkr.use_count()<<endl;
+    cout << "Sptr value : "<< Sptr->var << endl;
+    cout << "sp2 value : " << sp2->var << endl;
+    
+    Sptr.reset();
+    Sptr = nullptr;
+    cout << endl;
+    cout<< "Copy Sptr to sp2 ...."<<endl;
+    cout << "--------------------"<<endl;
+    cout << "Ref count Sptr1 : " << Sptr.use_count()<<endl;
+    cout << "Ref count sp2 :" << sp2.use_count()<<endl;
+    cout << endl;
+    cout << "Weak Pointer count : " << wkr.use_count()<<endl;
+    cout << "Exit Main"<<endl;
+    sp2 = wkr.lock();// it gives back shared pointer
+    cout<< " weaker pointer lock : "<< sp2.use_count()<<endl;
+    
+  /*
+    shared_ptr<int> sp(new int[10], default_delete<int[]>());
+
+    //cout << *sp.get() << endl;
+    //cout << sp.get()[1] << endl;
+    
+    for(int i = 0; i < 5; i++)
+    {
+        cin >> sp.get()[i];
+    }
+    
+    for(int i = 0; i < 5; i++)
+    {
+        cout << sp.get()[i];
+    }
+    cout << endl;
+
+    //int* p = new int (10);
+    shared_ptr<int> a (sp);
+
+    if (a.get() == sp.get())
+    cout << "a and p point to the same location\n";
+
+    // three ways of accessing the same address:
+    for(int i = 0; i < 5; i++)
+    {
+        cout << a.get()[i];
+    }
+    cout << endl;
+    cout << "Ref count sp : " << sp.use_count()<<endl;
+    sp2.swap(Sptr);
+    cout << "Ref count sp2 :" << sp2.use_count()<<endl;
+    cout << "Ref count Sptr :" << Sptr.use_count()<<endl;
+
+  
+    cout << *a.get() << "\n";
+    cout << *a << "\n";
+    cout << *sp << "\n";
+    */
+    
+    //Unique Pointers
+    unique_ptr<SharedTest> up(new SharedTest);
+    unique_ptr<SharedTest> up2 = move(up);
+    
+    cout << "Enter Unique "<<endl;
+    unique_ptr<SharedTest> up3 = funct_uniq();
+    cout << "Exit Unique "<<endl;
+
+    return 0;
+}
+
+// Shared pointer does 2 things
+//1.Transfer of ownership
+//2.Have multiple ownership
