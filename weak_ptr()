@@ -1,0 +1,142 @@
+
+#include <iostream>
+#include <memory>
+using namespace std;
+
+int main() {
+
+	std::cout << std::boolalpha << std::endl;
+
+	auto sharedPtr = std::make_shared<int>(2011);
+	std::weak_ptr<int> weakPtr(sharedPtr);
+
+	std::cout << "weakPtr.use_count(): " << weakPtr.use_count() << std::endl;
+	std::cout << "sharedPtr.use_count(): " << sharedPtr.use_count() << std::endl;
+	std::cout << "weakPtr.expired(): " << weakPtr.expired() << std::endl;//checks if the resource was already deleted. 
+														//  weakPtr.use_count() == 0.
+
+	if (std::shared_ptr<int> sharedPtr1 = weakPtr.lock()) { // check if its expired, if not return *this
+		std::cout << "*sharedPtr: " << *sharedPtr << std::endl;
+		std::cout << "sharedPtr1.use_count(): " << sharedPtr1.use_count() << std::endl;
+		std::cout << "sharedPtr.use_count(): " << sharedPtr.use_count() << std::endl;
+	}
+	else {
+		std::cout << "Don't get the resource!" << std::endl;
+	}
+
+	weakPtr.reset(); // weakPtr.lock() fails.
+	if (std::shared_ptr<int> sharedPtr1 = weakPtr.lock()) {
+		std::cout << "*sharedPtr: " << *sharedPtr << std::endl;
+		std::cout << "sharedPtr1.use_count(): " << sharedPtr1.use_count() << std::endl;
+	}
+	else {
+		std::cout << "Don't get the resource!" << std::endl;
+	}
+
+	cout << "\n\n\n\n" << endl;
+	std::cout << "weakPtr.use_count(): " << weakPtr.use_count() << std::endl;
+	std::cout << "sharedPtr.use_count(): " << sharedPtr.use_count() << std::endl;
+	std::cout << "weakPtr.expired(): " << weakPtr.expired() << std::endl;
+
+	std::cout << std::endl;
+
+}
+
+// cycle.cpp
+
+#include <iostream>
+#include <memory>
+
+struct Son;
+struct Daughter;
+
+struct Mother {
+	~Mother() {
+		std::cout << "Mother gone" << std::endl;
+	}
+	void setSon(const std::shared_ptr<Son> s) {
+		mySon = s;
+	}
+	void setDaughter(const std::shared_ptr<Daughter> d) {
+		myDaughter = d;
+	}
+	std::shared_ptr<const Son> mySon;
+	std::weak_ptr<const Daughter> myDaughter;
+};
+
+struct Son {
+	Son(std::shared_ptr<Mother> m) :myMother(m) {}
+	~Son() {
+		std::cout << "Son gone" << std::endl;
+	}
+	std::shared_ptr<const Mother> myMother;
+};
+
+struct Daughter {
+	Daughter(std::shared_ptr<Mother> m) :myMother(m) {}
+	~Daughter() {
+		std::cout << "Daughter gone" << std::endl;
+	}
+	std::shared_ptr<const Mother> myMother;
+};
+
+int main() {
+	std::cout << std::endl;
+	{
+		std::shared_ptr<Mother> mother = std::shared_ptr<Mother>(new Mother);
+		std::shared_ptr<Son> son = std::shared_ptr<Son>(new Son(mother));
+		std::shared_ptr<Daughter> daughter = std::shared_ptr<Daughter>(new Daughter(mother));
+		mother->setSon(son);
+		mother->setDaughter(daughter);
+	}
+	std::cout << std::endl;
+}
+*/
+// weak pointer doesnt own, and it doesnt participate on ref count(countrol block)...A->sp1,sp2,wp1 --> then RefCount = 2 only(no weak counted)
+//weak_ptr is created as a copy of shared_ptr.
+//first check its validity "expired()", then "lock()" -> returns void or shared pointer.
+
+// Cyclic reference problem : sp1 -> sp2 and sp2 -> sp1, cyclic problem, thus using weak pointer,it will break one reference, cyclic sharing is broken.
+
+#include <iostream>
+#include <memory>
+
+using namespace std;
+
+struct A {
+	std::weak_ptr<A> adjacent; // std::shared_ptr<A> adjacent; // here breaking cyclic ref
+	A() {
+		cout << "A Constructor" << endl;
+	}
+	~A() {
+		cout << "A Destructor" << endl;
+	}
+	void printA() {
+		cout << "A struct function " << endl;
+	}
+	void set_adj(std::shared_ptr<A> ptr) {
+		adjacent = ptr;
+	}
+};
+int main()
+{
+	std::shared_ptr<A> sp1(new A); // if used weak pointer, it only shows the number of use_counts
+	std::shared_ptr<A> sp2(new A);
+
+	// weak_ptr
+	std::weak_ptr<A> wp1 = sp1;
+	// std::shared_ptr<A> wp1 = sp1; // here count will be 3
+	
+	// cant use wp1->print, must use lock
+	wp1.lock()->printA();
+
+	sp1->set_adj(sp2);
+	sp2->set_adj(sp1); // cyclic dependency, always shared between each other
+
+	cout << sp1.use_count() << endl;
+	cout << sp2.use_count() << endl; // ref point has both 2. weak pointer shouldnt increase ref count
+
+	// if you see output constructor are called twice, and NO destructor due to cyclic dependency,
+	// for that you need to change the shared pointer(adjacent) to weak pointer-> then destructor is called.
+	return 0;
+}
